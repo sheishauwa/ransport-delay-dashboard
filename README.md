@@ -85,9 +85,3 @@ A **Lambda function** is triggered by **Amazon EventBridge** when delay for any 
 - **MTA NYC Transit GTFS Data**
 - **UK Transport Open Data**
 
----
-## 👩‍💻 Author
-
-**Hauwa Njidda**  
-📧 `hauwa.dbtech@gmail.com`
-
