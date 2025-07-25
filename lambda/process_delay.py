@@ -7,7 +7,7 @@ import random
 s3 = boto3.client('s3')
 
 # Your target S3 bucket name
-bucket = "transport-delay-data-bucket"
+bucket = "my-transport-delay-lambda-bucket"
 
 # Sample data pools
 routes = ["M12", "B25", "Q50", "T7"]
