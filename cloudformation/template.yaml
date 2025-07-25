@@ -35,19 +35,17 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: "*"
-
   ProcessDelayLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: ProcessDelayData
-      Runtime: python3.9
-      Role: !GetAtt ProcessDelayLambdaRole.Arn
-      Handler: process_delay.lambda_handler
-      Code:
-        S3Bucket: transport-delay-data-bucket
-        S3Key: lambda/process_delay.zip
-      Timeout: 60
-
+  Type: AWS::Lambda::Function
+  Properties:
+    Handler: process_delay.lambda_handler
+    Role: !GetAtt ProcessDelayLambdaRole.Arn
+    Runtime: python3.11
+    Code:
+      S3Bucket: my-transport-delay-lambda-bucket
+      S3Key: process_delay.zip
+    Timeout: 300
+    
   SNSTopic:
     Type: AWS::SNS::Topic
     Properties:
