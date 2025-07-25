@@ -1,1 +1,80 @@
 
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Transport Delay Real-Time Dashboard using Athena, S3, Lambda, SNS
+
+Resources:
+
+  TransportDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: transport-delay-data-bucket
+
+  ProcessDelayLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: DelayProcessorLambdaRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaS3Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: arn:aws:s3:::transport-delay-data-bucket/*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  ProcessDelayLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ProcessDelayData
+      Runtime: python3.9
+      Role: !GetAtt ProcessDelayLambdaRole.Arn
+      Handler: process_delay.lambda_handler
+      Code:
+        S3Bucket: transport-delay-data-bucket
+        S3Key: lambda/process_delay.zip
+      Timeout: 60
+
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: DelayAlertsTopic
+
+  GlueServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: GlueServiceRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+
+  GlueCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Name: DelayDataCrawler
+      Role: !GetAtt GlueServiceRole.Arn
+      DatabaseName: delay_data_db
+      Targets:
+        S3Targets:
+          - Path: !Sub s3://${TransportDataBucket}
+      Schedule:
+        ScheduleExpression: "cron(0/15 * * * ? *)"
