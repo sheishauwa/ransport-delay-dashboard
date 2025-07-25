@@ -47,8 +47,9 @@ A city transport monitoring solution that analyzes **bus and train delays** usin
 
 ## 📍 Dashboard Diagram
 
-🖼️ Located at:  
-`transport-delay-dashboard/quicksight/visualboard.png`
+Example QuickSight dashboard visualization:
+
+![transport-delay-dashboard](quicksight/visualboard.png)
 
 ---
 
