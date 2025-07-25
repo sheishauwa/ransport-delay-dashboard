@@ -1,78 +1,51 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Transport Delay Real-Time Dashboard using Athena, S3, Lambda, SNS
+Description: Real-time Public Transport Delay Insights System
 
 Resources:
-
-  TransportDataBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: transport-delay-data-bucket
 
   ProcessDelayLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: DelayProcessorLambdaRole
+      RoleName: ProcessDelayLambdaExecutionRole
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-      Policies:
-        - PolicyName: LambdaS3Policy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                Resource: arn:aws:s3:::transport-delay-data-bucket/*
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: "*"
-  ProcessDelayLambda:
-  Type: AWS::Lambda::Function
-  Properties:
-    Handler: process_delay.lambda_handler
-    Role: !GetAtt ProcessDelayLambdaRole.Arn
-    Runtime: python3.11
-    Code:
-      S3Bucket: my-transport-delay-lambda-bucket
-      S3Key: process_delay.zip
-    Timeout: 300
-    
-  SNSTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: DelayAlertsTopic
-
-  GlueServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: GlueServiceRole
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: glue.amazonaws.com
-            Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonAthenaFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
 
-  GlueCrawler:
-    Type: AWS::Glue::Crawler
+  ProcessDelayLambda:
+    Type: AWS::Lambda::Function
     Properties:
-      Name: DelayDataCrawler
-      Role: !GetAtt GlueServiceRole.Arn
-      DatabaseName: delay_data_db
-      Targets:
-        S3Targets:
-          - Path: !Sub s3://${TransportDataBucket}
-      Schedule:
-        ScheduleExpression: "cron(0/15 * * * ? *)"
+      FunctionName: ProcessDelayLambda
+      Handler: process_delay.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt ProcessDelayLambdaRole.Arn
+      Code:
+        S3Bucket: my-transport-delay-lambda-bucket
+        S3Key: process_delay.zip
+      Timeout: 300
+      MemorySize: 256
+
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: DelayAnalyticsWorkGroup
+      State: ENABLED
+      WorkGroupConfiguration:
+        ResultConfiguration:
+          OutputLocation: s3://my-transport-delay-lambda-bucket/query-results/
+
+Outputs:
+  LambdaFunctionName:
+    Description: Lambda function for processing delay data
+    Value: !Ref ProcessDelayLambda
+
+  AthenaWorkGroupName:
+    Description: Athena WorkGroup for running delay queries
+    Value: !Ref AthenaWorkGroup
