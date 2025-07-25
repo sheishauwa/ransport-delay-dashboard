@@ -89,5 +89,5 @@ A **Lambda function** is triggered by **Amazon EventBridge** when delay for any 
 ## 👩‍💻 Author
 
 **Hauwa Njidda**  
-📧 `hauwa.njidda@example.com`
+📧 `hauwa.dbtech@gmail.com`
 
